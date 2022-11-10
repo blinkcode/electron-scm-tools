@@ -55,6 +55,8 @@ export function createPatchFileScm(patchFile: string): Promise<void> {
         await copyFile1(`${patchFile}/publish/server`, `${patchFile}/scm补丁文件/root/server`);
         // 检查DBO
         copyDbo(`${patchFile}/publish/server/apps/scm`, `${patchFile}/scm补丁文件/DBUpdateFiles/Dbo`);
+        // 删除server下的DBO
+        deleteDbo(`${patchFile}/scm补丁文件/root/server`);
       }
       // 检查元数据
       if (fs.existsSync(`${patchFile}/publish/metadata`)) {
@@ -79,18 +81,6 @@ export function createPatchFileScm(patchFile: string): Promise<void> {
   });
 }
 
-function copyFile1(from: string, to: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    fs.cp(from, to, { recursive: true }, function (err: any) {
-      if (err) {
-        reject("复制文件失败：" + err);
-      } else {
-        resolve();
-      }
-    });
-  });
-}
-
 export async function createPatchFileDf(patchFile: string): Promise<void> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -102,6 +92,8 @@ export async function createPatchFileDf(patchFile: string): Promise<void> {
         await copyFile1(`${patchFile}/publish_df/server`, `${patchFile}/df补丁文件/root/server`);
         // 检查DBO
         copyDbo(`${patchFile}/publish_df/server/apps/bf`, `${patchFile}/df补丁文件/DBUpdateFiles/Dbo`);
+        // 删除server下的DBO
+        deleteDbo(`${patchFile}/df补丁文件/root/server`);
       }
       // 检查元数据
       if (fs.existsSync(`${patchFile}/publish_df/metadata`)) {
@@ -125,6 +117,34 @@ export async function createPatchFileDf(patchFile: string): Promise<void> {
       reject(error);
     }
   });
+}
+
+function copyFile1(from: string, to: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.cp(from, to, { recursive: true }, function (err: any) {
+      if (err) {
+        reject("复制文件失败：" + err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+function deleteFolder(filePath: string) {
+  if (fs.existsSync(filePath)) {
+    const files = fs.readdirSync(filePath);
+    files.forEach((file: any, index: any) => {
+      var curPath = path.join(filePath, file);
+      if (fs.statSync(curPath).isDirectory()) {
+        deleteFolder(curPath);
+      } else {
+        fs.unlinkSync(curPath);
+      }
+    });
+    // 删除空文件夹
+    fs.rmdirSync(filePath);
+  }
 }
 
 function copyDbo(filePath: string, toPath: string) {
@@ -153,6 +173,30 @@ function copyDbo(filePath: string, toPath: string) {
         }
         // 如果是文件夹
         if (isDir) copyDbo(filedir, toPath);
+      });
+    });
+  });
+}
+
+function deleteDbo(filePath: string) {
+  //根据文件路径读取文件，返回文件列表
+  fs.readdir(filePath, function (err: string, files: any[]) {
+    if (err) return console.error("Error:(spec)", err);
+    files.forEach((filename: string) => {
+      //获取当前文件的绝对路径
+      const filedir = path.join(filePath, filename);
+      fs.stat(filedir, (eror: string, stats: any) => {
+        if (eror) return console.error("Error:(spec)", err);
+        // 是否是文件夹
+        const isDir = stats.isDirectory();
+        // 如果是文件夹
+        if (isDir) {
+          if (filename.toLocaleLowerCase() === "dbo") {
+            deleteFolder(filedir);
+          } else {
+            deleteDbo(filedir);
+          }
+        }
       });
     });
   });

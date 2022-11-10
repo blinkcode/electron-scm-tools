@@ -1,7 +1,7 @@
 {
   "name": "electron-scm-tool",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.3",
   "author": "blink",
   "description": "供应量补丁增量工具，发版必备工具",
   "scripts": {

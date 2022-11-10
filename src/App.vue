@@ -27,6 +27,10 @@ export default {
 		}
 	},
 	methods: {
+		autoScroll() {
+			const textarea: any = document.getElementById('textarea');
+			textarea.scrollTop = textarea.scrollHeight;
+		},
 		beforeCheck() {
 			if (this.form.type === '1') {
 				if (this.form.dateRange.length !== 2) {
@@ -52,6 +56,7 @@ export default {
 				this.form.log += `当前分支为 ${branch}\r\n开始拉取仓库...\r\n`;
 				const pull = await gitPull(this.form.registoryPath);
 				this.form.log += `${pull}\r\n`;
+				this.autoScroll();
 				let beginCommit = '';
 				let endCommit = '';
 				if (this.form.type === '1') {
@@ -79,11 +84,13 @@ export default {
 					this.form.log += '未获取到增量内容...提前结束';
 					return false;
 				}
+				this.autoScroll();
 				this.form.log += `生成增量文件...\r\n`
 				const errMsg = await copyFile(files, `/patch/${now}`, rootPath);
 				this.form.log += `${errMsg}\r\n增量文件生成完毕...\r\n\r\n`;
 				await gitLog(beginCommit, endCommit, rootPath, now);
 				this.form.log += `commit提交记录生成：${rootPath}/patch/${now}/log.xlsx\r\n\r\n`;
+				this.autoScroll();
 				if (this.form.patchFile) {
 					this.form.log += `检测到需要生成补丁文件\r\n`;
 					await createPatchFileScm(`${rootPath}/patch/${now}`);
@@ -92,9 +99,11 @@ export default {
 					this.form.log += `补丁文件生成成功：${rootPath}/patch/${now}/df补丁文件\r\n\r\n`;
 				}
 				this.form.log += '结束...';
+				this.autoScroll();
 				this.form.btnDisabled = false;
 			} catch (error) {
 				this.form.log += '啊偶, 失败了';
+				this.autoScroll();
 				console.log(error);
 				this.form.btnDisabled = false;
 			}
@@ -138,7 +147,7 @@ export default {
 			</el-form-item>
 
 			<el-form-item label="日志">
-				<el-input v-model="form.log" type="textarea" :rows="2" :autosize="{ minRows: 15, maxRows: 15 }" resize="none" readonly />
+				<el-input id="textarea" v-model="form.log" type="textarea" :rows="2" :autosize="{ minRows: 15, maxRows: 15 }" resize="none" readonly />
 			</el-form-item>
 			<el-form-item>
 				<el-button type="primary" size="large" @submit.prevent @click="run" :disabled="btnDisabled">执行</el-button>
